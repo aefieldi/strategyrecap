@@ -1,0 +1,401 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Strategy Audit Recap Example</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style id="audit-css">
+:root{
+  --bg:#0b0a12;--bg2:#12101d;--surf:#15121f;--surf2:#1c1829;--line:rgba(255,255,255,.08);--line2:rgba(255,255,255,.14);
+  --txt:#f1eefb;--soft:#c9c3dd;--muted:#8b85a3;--lav:#b79cf5;--vio:#7c5cf0;--gold:#e8c878;--mint:#7fe0b8;--pink:#f08bb0;--sky:#7cc4f5;--coral:#f5a27c;
+  color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){color-scheme:light;--sky:#2179b5;--coral:#c2602d;--bg:#f7f5fc;--bg2:#efebf8;--surf:#ffffff;--surf2:#f2eef9;--line:rgba(20,10,50,.08);--line2:rgba(20,10,50,.16);--txt:#1a1530;--soft:#3c3558;--muted:#6f6890;--lav:#7c5cf0;--gold:#a8812c;--mint:#1f9d6b;--pink:#c2477a}}
+:root[data-theme="light"]{color-scheme:light;--sky:#2179b5;--coral:#c2602d;--bg:#f7f5fc;--bg2:#efebf8;--surf:#ffffff;--surf2:#f2eef9;--line:rgba(20,10,50,.08);--line2:rgba(20,10,50,.16);--txt:#1a1530;--soft:#3c3558;--muted:#6f6890;--lav:#7c5cf0;--gold:#a8812c;--mint:#1f9d6b;--pink:#c2477a}
+:root[data-theme="dark"]{--bg:#0b0a12;--bg2:#12101d;--surf:#15121f;--surf2:#1c1829;--line:rgba(255,255,255,.08);--line2:rgba(255,255,255,.14);--txt:#f1eefb;--soft:#c9c3dd;--muted:#8b85a3;--lav:#b79cf5;--gold:#e8c878;--mint:#7fe0b8;--pink:#f08bb0}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--txt);font-family:Outfit,system-ui,-apple-system,"Segoe UI",sans-serif;font-weight:300;line-height:1.6;
+  background-image:radial-gradient(ellipse at 0% 0%,rgba(124,92,240,.22),transparent 45%),radial-gradient(ellipse at 100% 100%,rgba(127,224,184,.07),transparent 45%);background-attachment:fixed}
+.wrap{max-width:920px;margin:0 auto;padding:56px 18px 90px}
+h1,h2,h3{font-family:Outfit,system-ui,sans-serif;font-weight:700;letter-spacing:-.02em;margin:0}
+.serif{font-family:"Instrument Serif",Georgia,serif;font-style:italic;font-weight:400}
+.mono{font-family:"DM Mono",ui-monospace,Menlo,monospace}
+a{color:var(--lav);text-decoration:none;border-bottom:1px solid rgba(183,156,245,.4)}
+a:hover{border-color:var(--lav)}
+a:focus-visible,button:focus-visible,textarea:focus-visible,input:focus-visible{outline:2px solid var(--lav);outline-offset:3px;border-radius:6px}
+
+/* hero */
+.hero{padding:0 0 34px}
+.hero .who{font-family:"DM Mono",monospace;font-size:13px;letter-spacing:.08em;color:var(--lav);margin:0 0 18px}
+.hero h1{font-size:clamp(44px,8.5vw,92px);line-height:.95;letter-spacing:-.045em}
+.hero h1 .serif{color:var(--lav);font-size:1.04em;letter-spacing:-.01em}
+.hero .desc{color:var(--soft);font-size:18px;max-width:600px;margin:22px 0 0}
+.hero .prep{color:var(--muted);font-size:14px;margin:14px 0 0}
+.replay{display:inline-flex;align-items:center;gap:10px;margin-top:24px;font-weight:500;font-size:15px;color:#fff;background:var(--vio);border:1px solid var(--vio);border-radius:99px;padding:11px 22px}
+.replay:hover{border-color:#fff}
+.replay::before{content:"";border-left:9px solid currentColor;border-top:6px solid transparent;border-bottom:6px solid transparent}
+.replay span{font-family:"DM Mono",monospace;font-size:12px;opacity:.8}
+
+/* sections */
+section{margin-top:26px}
+.card{position:relative;background:linear-gradient(135deg,rgba(124,92,240,.13) 0%,var(--surf) 40%,var(--bg2) 100%);border:1px solid var(--line2);border-radius:26px;padding:32px 34px;overflow:hidden}
+.card::before{content:"";position:absolute;inset:0;pointer-events:none;background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);background-size:44px 44px;opacity:.5;-webkit-mask-image:linear-gradient(90deg,transparent 35%,#000 100%);mask-image:linear-gradient(90deg,transparent 35%,#000 100%)}
+.card>*{position:relative}
+@media(max-width:600px){.card{padding:24px 20px;border-radius:20px}.wrap{padding-top:36px}}
+.sec-title{font-size:clamp(26px,4.2vw,36px);line-height:1.08;margin:0 0 6px}
+.sec-sub{color:var(--muted);font-size:15px;margin:0 0 22px}
+
+/* snapshot stats */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+@media(max-width:640px){.stats{grid-template-columns:repeat(2,1fr)}}
+.stat{border:1px solid var(--line2);border-radius:18px;padding:16px 16px 14px;background:rgba(0,0,0,.14)}
+:root[data-theme="light"] .stat{background:var(--surf2)}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]) .stat{background:var(--surf2)}}
+.stat .v{font-weight:700;font-size:28px;letter-spacing:-.03em;line-height:1.05}
+.stat .l{color:var(--muted);font-size:13px;margin-top:6px;line-height:1.35}
+.stat.warn .v{color:var(--pink)}
+.stat.good .v{color:var(--mint)}
+.links{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px}
+.links a{border:1px solid var(--line2);border-radius:99px;padding:8px 14px;font-size:14px;color:var(--soft)}
+.links a span{color:var(--muted);margin-left:6px}
+
+/* lists */
+.twocol{display:grid;grid-template-columns:1fr 1fr;gap:18px 30px}
+@media(max-width:700px){.twocol{grid-template-columns:1fr}}
+.block h3{font-size:17px;font-weight:600;margin:0 0 8px;color:var(--txt)}
+ul.dots{list-style:none;margin:0;padding:0}
+ul.dots li{position:relative;padding-left:18px;margin:0 0 8px;color:var(--soft);font-size:15.5px}
+ul.dots li::before{content:"";position:absolute;left:0;top:.62em;width:7px;height:7px;border-radius:50%;background:var(--lav);opacity:.8}
+.goal{display:grid;grid-template-columns:minmax(120px,190px) 1fr;border-top:1px solid var(--line)}
+.goal:last-child{border-bottom:1px solid var(--line)}
+.goal div{padding:12px 0}
+.goal .k{color:var(--gold);font-size:14px;font-weight:500;padding-right:16px}
+.goal .val{color:var(--soft);font-size:15.5px}
+@media(max-width:560px){.goal{grid-template-columns:1fr}.goal .k{padding-bottom:0}}
+
+/* bottleneck: the one loud moment */
+.bottleneck{border-color:rgba(232,200,120,.35)}
+.quote{font-family:"Instrument Serif",Georgia,serif;font-style:italic;font-size:clamp(22px,3.4vw,30px);line-height:1.3;color:var(--gold);margin:0 0 22px;max-width:760px}
+.quote::before{content:"\201C"}.quote::after{content:"\201D"}
+.verdict{font-size:clamp(24px,3.6vw,32px);font-weight:700;line-height:1.15;letter-spacing:-.02em;margin:0 0 16px;max-width:760px}
+
+/* big picture */
+.moves{display:grid;gap:14px}
+.move{display:grid;grid-template-columns:54px 1fr;gap:6px 18px;border:1px solid var(--line2);border-radius:20px;padding:22px 22px 18px;background:rgba(0,0,0,.12)}
+:root[data-theme="light"] .move{background:var(--surf2)}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]) .move{background:var(--surf2)}}
+.move .n{font-family:"Instrument Serif",Georgia,serif;font-style:italic;font-size:46px;line-height:.9;color:var(--lav)}
+.move h3{font-size:20px;line-height:1.25;margin:4px 0 10px}
+.move ul.dots li{font-size:15px}
+.tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.tag{font-size:13px;color:var(--soft);border:1px solid var(--line2);border-radius:99px;padding:5px 12px;background:rgba(124,92,240,.08)}
+a.tag{color:var(--lav);border-color:rgba(183,156,245,.45)}
+a.tag:hover{border-color:var(--lav)}
+.ask{margin:22px 0 0;font-family:"Instrument Serif",Georgia,serif;font-style:italic;font-size:24px;color:var(--gold)}
+@media(max-width:560px){.move{grid-template-columns:1fr}}
+
+/* notes + steps */
+.notes-view{white-space:pre-wrap;color:var(--soft);font-size:15.5px;min-height:60px}
+.empty{color:var(--muted);font-style:italic}
+textarea,input[type=text]{width:100%;background:var(--bg2);color:var(--txt);border:1px solid var(--line2);border-radius:14px;padding:14px 16px;font:inherit;font-size:15.5px;line-height:1.55}
+textarea{min-height:220px;resize:vertical}
+.step{display:grid;grid-template-columns:36px 1fr;gap:14px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}
+.step .num{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:var(--vio);color:#fff;font-weight:600}
+.step.done .txt{text-decoration:line-through;color:var(--muted)}
+.step .txt{color:var(--soft);font-size:15.5px}
+.step label{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);margin-top:6px}
+.bar{display:flex;gap:12px;align-items:center;margin-top:18px;flex-wrap:wrap}
+button{font:inherit;font-weight:500;font-size:14px;border-radius:99px;padding:10px 18px;border:1px solid var(--line2);background:transparent;color:var(--txt);cursor:pointer}
+button.primary{background:var(--vio);border-color:var(--vio);color:#fff}
+button[disabled]{opacity:.5;cursor:default}
+.status{font-size:13px;color:var(--muted)}
+.hidden{display:none!important}
+.sign{margin-top:44px;font-family:"Instrument Serif",Georgia,serif;font-style:italic;font-size:30px;color:var(--lav)}
+.foot{color:var(--muted);font-size:13px;margin-top:8px}
+@media (prefers-reduced-motion:no-preference){.hero h1{animation:rise .9s cubic-bezier(.2,.7,.2,1) both}@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}}
+
+/* proposal + recap (added after the call) */
+.eyebrow{font-family:"DM Mono",ui-monospace,Menlo,monospace;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--mint);margin:0 0 12px}
+.sec-title{text-wrap:balance}
+/* the game plan: same card as the rest, a touch more violet and a brighter edge */
+.proposal{border-color:rgba(183,156,245,.6);background:linear-gradient(135deg,rgba(124,92,240,.24) 0%,var(--surf) 55%,var(--bg2) 100%)}
+.pq{margin:4px 0 26px;max-width:720px}
+.pq p{font-family:"Instrument Serif",Georgia,serif;font-style:italic;font-size:clamp(21px,3.1vw,27px);line-height:1.3;color:var(--txt);margin:0}
+.pq p::before{content:"\201C"}.pq p::after{content:"\201D"}
+.pq cite{display:block;font-style:normal;font-family:"DM Mono",ui-monospace,Menlo,monospace;font-size:12px;letter-spacing:.06em;color:var(--muted);margin-top:8px}
+.move>div{min-width:0}
+.terms{margin-top:24px}
+.decide{margin-top:24px;border:1px solid rgba(232,200,120,.4);border-radius:20px;padding:22px 24px;background:rgba(232,200,120,.07)}
+.decide .line{font-family:"Instrument Serif",Georgia,serif;font-style:italic;font-size:clamp(22px,3.2vw,29px);line-height:1.25;color:var(--gold);margin:0;text-wrap:balance}
+.decide .note{color:var(--muted);font-size:14px;margin:10px 0 0}
+.chapter{display:flex;align-items:center;gap:14px;margin:44px 0 0;font-family:"DM Mono",ui-monospace,Menlo,monospace;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.chapter::after{content:"";flex:1;height:1px;background:var(--line2)}
+.notes-view.rich{white-space:normal;display:grid;gap:20px}
+.note-h{font-family:"DM Mono",ui-monospace,Menlo,monospace;font-size:12px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--lav);margin:0 0 6px}
+.note-p{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--soft);font-size:15.5px;max-width:720px}
+.boxes{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:700px){.boxes{grid-template-columns:1fr}}
+.box{--c:var(--lav);min-width:0;border:1px solid color-mix(in srgb,var(--c) 50%,transparent);border-radius:20px;padding:20px 22px 14px;background:color-mix(in srgb,var(--c) 12%,transparent)}
+.box.c2{--c:var(--mint)}.box.c3{--c:var(--gold)}.box.c4{--c:var(--pink)}.box.c5{--c:var(--sky)}.box.c6{--c:var(--coral)}
+.box h3{font-size:17px;font-weight:600;margin:0 0 10px;color:var(--c)}
+.box ul.dots li::before{background:var(--c);opacity:1}
+.incl{margin-top:26px}
+.incl h3{font-family:"DM Mono",ui-monospace,Menlo,monospace;font-size:12px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--mint);margin:0 0 12px}
+.incl ul.dots{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:2px 28px}
+.proposal .sec-sub{font-size:16.5px;color:var(--soft);max-width:700px}
+.recap-toggle{display:inline-flex;align-items:center;gap:10px;margin:0 0 4px;border-color:var(--line2);color:var(--txt)}
+.recap-toggle::after{content:"";width:8px;height:8px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:translateY(-2px) rotate(45deg)}
+.recap-toggle[aria-expanded="true"]::after{transform:translateY(2px) rotate(-135deg)}
+.recap-toggle:hover{border-color:var(--lav)}
+.recap .boxes{margin-top:18px}
+.nstep{display:grid;grid-template-columns:22px 1fr;gap:12px;align-items:start;margin-top:16px;padding:14px 16px;border:1px dashed var(--line2);border-radius:14px}
+.nstep input[type=checkbox]{width:20px;height:20px;margin:2px 0 0;accent-color:var(--vio);cursor:pointer}
+.nstep>div{min-width:0}
+.nlab{display:block;font-family:"DM Mono",ui-monospace,Menlo,monospace;font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);margin:0 0 4px;cursor:pointer}
+.nstep .txt{color:var(--txt);font-size:15.5px;font-weight:400}
+.nstep.done .txt{text-decoration:line-through;color:var(--muted)}
+/* feedback ask, last card before the sign-off */
+.feedback{border-color:color-mix(in srgb,var(--mint) 45%,transparent)}
+.feedback .sec-title{margin-bottom:14px}
+.fb-body{color:var(--soft);font-size:16px;max-width:680px;margin:0 0 12px}
+.fb-links{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px}
+.fb-links a{border:1px solid var(--line2);border-radius:99px;padding:10px 18px;font-size:14.5px;font-weight:500;color:var(--txt)}
+.fb-links a:hover{border-color:var(--mint)}
+.fb-links a span{color:var(--muted);font-weight:300;margin-left:8px}
+.demo-banner{margin:0 0 30px;padding:12px 18px;border:1px dashed var(--line2);border-radius:14px;color:var(--soft);font-size:14px;max-width:720px}
+.replay.plain::before{display:none}
+span.replay{cursor:default}
+.demo-cta{display:flex;flex-wrap:wrap;align-items:center;gap:6px 16px;margin-top:6px}
+.demo-cta .replay{margin-top:18px}
+.demo-note{margin-top:18px;font-family:"DM Mono",ui-monospace,Menlo,monospace;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<script type="application/json" id="audit-data">{"client":{"name":"Luna (example client)","brand":"The Moonlit Deck","descriptor":"Made-up client for demonstration. Tarot reader, 22K on Instagram, paid community since 2025."},"date":"September 30, 2026","replay_url":null,"snapshot":{"note":"Example numbers. Not a real client.","stats":[{"value":"$2,140","label":"Monthly recurring revenue"},{"value":"86","label":"Paying members"},{"value":"79%","label":"Monthly retention","tone":"warn"},{"value":"$118","label":"Lifetime value per member"},{"value":"1.8%","label":"About-page conversion, last 30 days"},{"value":"6","label":"Signups from Instagram last month","tone":"warn"}],"links":[{"label":"The Moonlit Deck","url":"https://www.skool.com/","note":"$29/mo"},{"label":"Instagram","url":"https://www.instagram.com/","note":"22K"}]},"now":[{"heading":"Your offer","bullets":["One membership at $29 a month.","Private readings at $150, booked by DM, about 4 a month.","Nothing between the two, and no link from one to the other."]},{"heading":"Your members","bullets":["86 paying. About 18 leave each month.","Most who leave go before their third payment.","The ones who stay past month three tend to stay a year."]},{"heading":"Your content","bullets":["Five reels a week, about 300K views a month.","Most reels end without a keyword or a look inside the room."]}],"goal_window":"Next 6 months","goal":[{"label":"Income","value":"$5,000 a month, recurring"},{"label":"Delivery","value":"Fewer one-off readings, more time in the community"},{"label":"Hours","value":"Four working days a week"}],"bottleneck":{"quote":"I post every single day and the community just isn't growing.","verdict":"You don't have a reach problem. You have one $29 offer, and people leave before they have had a reason to stay.","points":["300K views sent 6 signups last month. The content works. It isn't pointing at the room.","About 18 of 86 members leave each month, most before their third payment.","$5,000 on the membership alone needs at least 37 new paying members a month. You're at about 14.","Members already ask you for readings in the DMs. There is no offer for them to say yes to."]},"big_picture":[{"title":"Add a rung above the membership","points":["Members are your warmest buyers and there is nothing to sell them after $29.","Ten member readings a month at $150 adds $1,500, from people who already said yes once."],"tags":[{"label":"Member reading offer"},{"label":"The ask, every call"},{"label":"Win post, then one spot"}]},{"title":"Keep members past their third payment","points":["Three in four who leave are gone by month three. Holding half of them is worth about $260 a month, every month.","The first week decides it: one quick win, one person who says their name."],"tags":[{"label":"Start Here in 10 minutes"},{"label":"Day-7 check-in"},{"label":"Annual plan"}]},{"title":"Point every reel at the room","points":["Same content, one keyword. At 300K views, even a 0.5% comment rate is 1,500 conversations a month.","Show the inside of the community once a week, so people know what they are joining."],"tags":[{"label":"Comment keyword"},{"label":"A–Z library","url":"https://aefieldi.github.io/freegift/"},{"label":"4 Stages of Ads","url":"https://aefieldi.github.io/4-stages-of-ads/"}]}],"ask":"You chose to go deeper on the rung above the membership.","deep_dive_notes":"WHAT YOU REALLY DO\nTarot for women who are done asking permission.\n\nTHE LEAK IS THE FIRST THREE PAYMENTS\nAbout 18 members leave each month.\nThree in four are gone before payment three.\nThe fix is a quick win in week one.\n\nYOUR MEMBER READING OFFER\n$150, members only, ten a month.\nInvite members first, in a post that shares one member's win.\nEnd every reading with the next step.\n\nNEW POSITIONING\nFrom daily card pulls to decisions you can stand behind.\n\nTOOLS\nMy A to Z library, as a model for yours: https://aefieldi.github.io/freegift/\n\nPARKED\nThe second podcast.\n","next_steps":[{"text":"Offer ten member readings this month at $150, and make the ask at the end of every one.","done":false},{"text":"Rebuild Start Here so a new member gets one quick win in their first 10 minutes.","done":false},{"text":"Add one comment keyword to every reel this week, and show the inside of the room once.","done":false}],"signoff":"xoxo, Amanda 💜","_about":"MADE-UP CLIENT. Luna does not exist and every number is invented. This file builds the shareable example page on top of '04 Artifacts/Strategy Audit - Example Client (demo).html'. Copy the shape for a real client, never the content.","page_title":"Strategy Audit Recap Example","demo":{"banner":"Example page. Luna is a made-up client and every number here is invented. This is what you leave a 1:1 Strategy Audit with.","cta_label":"Book your 1:1 Strategy Audit","cta_url":"https://cal.com/amanda-fielding-smith-ljdz7y/strategy-audit-open","cta_note":"Limited availability"},"replay_length":"58 min","proposal":{"eyebrow":"Here’s what I’d like to work on over the next 90 days","title":"Your VIP game plan and deliverables","sub":"You post five reels a week, about 300K views a month, and last month it brought in 6 signups. Over the next 90 days we make that work show up in your revenue, in this order.","quote":"I’m tired of making reels for people who will never join.","quote_by":"You, on our call","deliverables":[{"title":"Your infinite content plan: Instagram first, then YouTube","points":["A 30-day plan in your brand voice, built on your upgraded positioning.","Modeled on the top-performing content in your space, so every reel starts from what’s already proven to work.","You sit down knowing what to record, which saves you hours every week."]},{"title":"Maximize the members you already have","points":["An attractive annual offer for the people who already know, like and trust you.","Your member reading flow locked in, from the invitation to the reading to the next step.","The rung above your membership fleshed out: what it includes, what it costs, and when you open it.","Those calls tell you what goes into the community next, while your existing members keep being served."]},{"title":"Maximize your organic traffic","points":["A member from your own audience costs you nothing to reach, and already trusts you.","Messaging that speaks directly to the person you most want to work with, so you’re making content you really enjoy.","Your A to Z library, one comment keyword for every reel, one welcome message for new followers.","Instagram engagement campaigns that move the people already watching you toward the room."]}],"includes":{"title":"Your support along the way","items":["An onboarding call, then 1:1 calls every three weeks","WhatsApp access to me between calls, for questions as they come up","Three VIP group coaching office hours a month"]},"terms":[{"label":"Investment","value":"As shared on your call"}],"decision":"DM me on Skool by Friday if you’re in, and we’ll get your onboarding scheduled as early as next week."},"recap":{"title":"We covered a lot. Here’s the recap.","sub":"From our call on September 30.","items":[{"heading":"Where your members come from","bullets":["About 300K views a month sent 6 signups.","Most reels end without a keyword or a look inside the room.","The content works. It isn’t pointing anywhere yet."]},{"heading":"Where members leave","bullets":["About 18 of 86 members leave each month.","Three in four of them are gone before their third payment.","Members who pass month three tend to stay a year."]},{"heading":"Your offer ladder","bullets":["A $29 membership and $150 readings, with nothing between them.","Members ask for readings in the DMs and there is no offer to say yes to."]},{"heading":"Keeping members past payment three","bullets":["One quick win in the first 10 minutes.","A check-in on day 7, before the second charge.","An annual plan for the members who already stay."]},{"heading":"A rung above the membership","bullets":["Ten member readings a month at $150 adds $1,500.","Make the ask at the end of every reading.","One win post, then one spot opened."]},{"heading":"What you decided","bullets":["You chose to go deeper on the rung above the membership.","The second podcast is parked until the room is growing."]}]},"audit_label":"Your audit, as we walked through it","big_picture_sub":"Three moves. We walked through all three on the call.","hide_next_steps":true,"steps_in_big_picture":true}</script>
+<script id="audit-js">
+(function(){
+  var DATA = JSON.parse(document.getElementById('audit-data').textContent);
+  var CSS = document.getElementById('audit-css').textContent;
+  var JS = document.getElementById('audit-js').textContent;
+  var canWrite = false, art = null, busy = false;
+
+  function el(tag, cls, text){var e=document.createElement(tag); if(cls) e.className=cls; if(text!=null) e.textContent=text; return e;}
+  function safeUrl(u){return /^https?:\/\//i.test(u||'') ? u : null;}
+  function link(label,url){var u=safeUrl(url); if(!u) return el('span',null,label); var a=el('a',null,label); a.href=u; a.target='_blank'; a.rel='noopener'; return a;}
+  function dots(items){var ul=el('ul','dots'); (items||[]).forEach(function(t){ul.appendChild(el('li',null,t));}); return ul;}
+  function card(extra){var c=el('div','card'+(extra?' '+extra:'')); return c;}
+  function head(c,title,sub){c.appendChild(el('h2','sec-title',title)); if(sub) c.appendChild(el('p','sec-sub',sub));}
+
+  function render(){
+    var app=document.getElementById('app'); app.textContent='';
+    var d=DATA, c=d.client||{};
+    document.title='Your 1:1 Strategy Audit · '+(c.name||'');
+
+    // example pages say so before anything else
+    var demo=d.demo;
+    if(demo&&demo.banner) app.appendChild(el('p','demo-banner',demo.banner));
+
+    // hero
+    var hero=el('header','hero');
+    hero.appendChild(el('p','who',[c.name,c.brand].filter(Boolean).join(' / ')));
+    var h1=el('h1'); h1.appendChild(document.createTextNode('Your 1:1 ')); h1.appendChild(el('span','serif','Strategy Audit')); hero.appendChild(h1);
+    if(c.descriptor) hero.appendChild(el('p','desc',c.descriptor));
+    hero.appendChild(el('p','prep','Prepared by Amanda, Spiritual Business Skool'+(d.date?', '+d.date:'')+'. Where you are now, where you want to go, and the highest-leverage moves to get there.'));
+    if(safeUrl(d.replay_url)){var r=link('Watch the replay',d.replay_url); r.classList.add('replay'); if(d.replay_length) r.appendChild(el('span',null,d.replay_length)); hero.appendChild(r);}
+    else if(demo&&d.replay_length){var r2=el('span','replay','Watch the replay'); r2.appendChild(el('span',null,d.replay_length)); hero.appendChild(r2);}
+    app.appendChild(hero);
+
+    // proposal: what we build together
+    var p=d.proposal;
+    function drawProposal(){ if(!p) return; var pc=card('proposal'); if(p.eyebrow) pc.appendChild(el('p','eyebrow',p.eyebrow)); head(pc,p.title,p.sub);
+      if(p.quote){var bq=el('blockquote','pq'); bq.appendChild(el('p',null,p.quote)); if(p.quote_by) bq.appendChild(el('cite',null,p.quote_by)); pc.appendChild(bq);}
+      var pm=el('div','moves');
+      (p.deliverables||[]).forEach(function(m,i){var row=el('div','move'); row.appendChild(el('div','n',String(i+1)));
+        var body=el('div'); body.appendChild(el('h3',null,m.title)); body.appendChild(dots(m.points)); row.appendChild(body); pm.appendChild(row);});
+      pc.appendChild(pm);
+      if(p.includes&&(p.includes.items||[]).length){var inc=el('div','incl'); inc.appendChild(el('h3',null,p.includes.title||'What\u2019s included')); inc.appendChild(dots(p.includes.items)); pc.appendChild(inc);}
+      if((p.terms||[]).length){var tr=el('div','terms'); p.terms.forEach(function(g){var row=el('div','goal'); row.appendChild(el('div','k',g.label)); row.appendChild(el('div','val',g.value)); tr.appendChild(row);}); pc.appendChild(tr);}
+      if(p.decision){var dc=el('div','decide'); dc.appendChild(el('p','line',p.decision)); if(p.decision_note) dc.appendChild(el('p','note',p.decision_note)); pc.appendChild(dc);}
+      app.appendChild(wrapSec(pc)); }
+    if(d.proposal_first) drawProposal();
+
+    // call recap
+    var rc=d.recap;
+    if(rc&&(rc.items||[]).length){var rcc=card('recap'); head(rcc,rc.title||'Call recap',rc.sub||null); var rtw=el('div','boxes'); rtw.id='recap-body';
+      if(rc.collapsed){var tg2=el('button','recap-toggle',rc.open_label||'Open the recap'); tg2.type='button'; tg2.setAttribute('aria-expanded','false'); tg2.setAttribute('aria-controls','recap-body'); rtw.classList.add('hidden');
+        tg2.onclick=function(){var open=rtw.classList.contains('hidden'); rtw.classList.toggle('hidden',!open); tg2.setAttribute('aria-expanded',String(open)); tg2.textContent=open?(rc.close_label||'Close the recap'):(rc.open_label||'Open the recap');};
+        rcc.appendChild(tg2);}
+      rc.items.forEach(function(b,i){var bl=el('div','box c'+(i%6+1)); bl.appendChild(el('h3',null,b.heading)); bl.appendChild(dots(b.bullets)); rtw.appendChild(bl);});
+      rcc.appendChild(rtw); app.appendChild(wrapSec(rcc));}
+    if(!d.proposal_first) drawProposal();
+
+    if(d.audit_label) app.appendChild(el('p','chapter',d.audit_label));
+
+    // snapshot
+    var s=d.snapshot||{}; var sc=card(); head(sc,'Snapshot', s.note||null);
+    var grid=el('div','stats');
+    (s.stats||[]).forEach(function(x){var b=el('div','stat'+(x.tone?' '+x.tone:'')); b.appendChild(el('div','v',x.value)); b.appendChild(el('div','l',x.label)); grid.appendChild(b);});
+    sc.appendChild(grid);
+    if((s.links||[]).length){var lk=el('div','links'); s.links.forEach(function(x){var a=link(x.label,x.url); if(x.note){a.appendChild(el('span',null,x.note));} lk.appendChild(a);}); sc.appendChild(lk);}
+    app.appendChild(wrapSec(sc));
+
+    // where you are now
+    if((d.now||[]).length){var nc=card(); head(nc,'Where you are now'); var tw=el('div','twocol');
+      d.now.forEach(function(b){var bl=el('div','block'); bl.appendChild(el('h3',null,b.heading)); bl.appendChild(dots(b.bullets)); tw.appendChild(bl);});
+      nc.appendChild(tw); app.appendChild(wrapSec(nc));}
+
+    // where you want to go
+    if((d.goal||[]).length){var gc=card(); head(gc,'Where you want to go', d.goal_window||'Next 3 to 6 months');
+      d.goal.forEach(function(g){var row=el('div','goal'); row.appendChild(el('div','k',g.label)); row.appendChild(el('div','val',g.value)); gc.appendChild(row);});
+      app.appendChild(wrapSec(gc));}
+
+    // bottleneck
+    var bn=d.bottleneck||{}; var bc=card('bottleneck'); head(bc,'Your biggest bottleneck');
+    if(bn.quote) bc.appendChild(el('p','quote',bn.quote));
+    if(bn.verdict) bc.appendChild(el('p','verdict',bn.verdict));
+    bc.appendChild(dots(bn.points)); app.appendChild(wrapSec(bc));
+
+    // big picture
+    var bp=card(); head(bp,'The big picture',d.big_picture_sub||'Three moves. We go through all three, then pick one to go deep on together.');
+    var mv=el('div','moves');
+    (d.big_picture||[]).forEach(function(m,i){var row=el('div','move'); row.appendChild(el('div','n',String(i+1)));
+      var body=el('div'); body.appendChild(el('h3',null,m.title)); body.appendChild(dots(m.points)); row.appendChild(body);
+      if((m.tags||[]).length){var tg=el('div','tags'); m.tags.forEach(function(t){var c=safeUrl(t.url)?link(t.label,t.url):el('span',null,t.label); c.classList.add('tag'); tg.appendChild(c);}); body.appendChild(tg);}
+      var st=d.steps_in_big_picture&&(d.next_steps||[])[i];
+      if(st){var ns1=el('div','nstep'); var cb1=el('input'); cb1.type='checkbox'; cb1.id='ns-'+i; cb1.checked=stepTicked(i,!!st.done); ns1.classList.toggle('done',cb1.checked);
+        cb1.onchange=function(){ns1.classList.toggle('done',cb1.checked); tickStep(i,cb1.checked);};
+        var nb=el('div'); var nl=el('label','nlab',d.step_label||'Prioritized next step'); nl.htmlFor='ns-'+i; nb.appendChild(nl); nb.appendChild(el('div','txt',st.text||''));
+        var ni=el('input','hidden'); ni.type='text'; ni.value=st.text||''; ni.id='ns-text-'+i; ni.setAttribute('aria-label','Next step '+(i+1)); ni.dataset.i=i; nb.appendChild(ni);
+        ns1.appendChild(cb1); ns1.appendChild(nb); body.appendChild(ns1);}
+      mv.appendChild(row);});
+    bp.appendChild(mv); bp.appendChild(el('p','ask',d.ask||'Which one do you want to go deeper on today?'));
+    app.appendChild(wrapSec(bp));
+
+    // deep dive
+    var dd=card(); head(dd,'Our deep dive');
+    var view=el('div','notes-view'); if(d.deep_dive_notes){richNotes(view,d.deep_dive_notes);} else {view.appendChild(el('span','empty','Notes from our call will appear here.'));}
+    var ta=el('textarea','hidden'); ta.id='notes'; ta.value=d.deep_dive_notes||''; ta.setAttribute('aria-label','Deep dive notes');
+    dd.appendChild(view); dd.appendChild(ta); app.appendChild(wrapSec(dd));
+
+    // next steps
+    var ns=d.hide_next_steps?dd:card(); if(!d.hide_next_steps) head(ns,'Your prioritized next steps');
+    var steps=d.hide_next_steps?[]:((d.next_steps&&d.next_steps.length)?d.next_steps:[{text:'',done:false},{text:'',done:false},{text:'',done:false}]);
+    steps.forEach(function(st,i){var row=el('div','step'+(st.done?' done':'')); row.appendChild(el('div','num',String(i+1)));
+      var col=el('div'); var t=el('div','txt',st.text||''); if(!st.text){t.textContent='To be decided on our call'; t.classList.add('empty');}
+      var inp=el('input','hidden'); inp.type='text'; inp.value=st.text||''; inp.setAttribute('aria-label','Next step '+(i+1)); inp.dataset.i=i;
+      var lb=el('label','hidden'); var cb=el('input'); cb.type='checkbox'; cb.checked=!!st.done; cb.dataset.i=i; lb.appendChild(cb); lb.appendChild(document.createTextNode('Done'));
+      col.appendChild(t); col.appendChild(inp); col.appendChild(lb); row.appendChild(col); ns.appendChild(row);});
+    var bar=el('div','bar hidden'); bar.id='editbar';
+    var eb=el('button',null,(d.hide_next_steps&&!d.steps_in_big_picture)?'Edit notes':'Edit notes & steps'); eb.id='editbtn';
+    var sb=el('button','primary hidden','Save to this page'); sb.id='savebtn';
+    var cx=el('button','hidden','Cancel'); cx.id='cancelbtn';
+    var stt=el('span','status'); stt.id='status';
+    bar.appendChild(eb); bar.appendChild(sb); bar.appendChild(cx); bar.appendChild(stt); ns.appendChild(bar);
+    if(!d.hide_next_steps) app.appendChild(wrapSec(ns));
+
+    // feedback ask: on every audit page by default. "feedback": false in the data turns it off.
+    if(d.feedback!==false){var fb=d.feedback||{}; var fc=card('feedback');
+      fc.appendChild(el('p','eyebrow',fb.eyebrow||'One small ask'));
+      head(fc,fb.title||'Was this helpful?');
+      fc.appendChild(el('p','fb-body',fb.body||'If it was, would you share your feedback with me? Post it in your stories, share it inside the community, send me a voice note or a Loom, or just type it out. Whatever you’re most comfortable with.'));
+      fc.appendChild(el('p','fb-body',fb.why||'I thrive off the feedback. I want these audits to be really, really valuable, and your words help me make them better and reach more people. I would love it.'));
+      var fl=el('div','fb-links');
+      (fb.links||[{label:'Share it in the community',url:'https://www.skool.com/amanda'},{label:'Tag or DM me on Instagram',url:'https://www.instagram.com/amandafielding.smith/',note:'@amandafielding.smith'}]).forEach(function(x){var a=link(x.label,x.url); if(x.note) a.appendChild(el('span',null,x.note)); fl.appendChild(a);});
+      fc.appendChild(fl); app.appendChild(wrapSec(fc));}
+
+    app.appendChild(el('p','sign',d.signoff||'xoxo, Amanda 💜'));
+    if(demo&&safeUrl(demo.cta_url)){var dc2=el('div','demo-cta'); var da=link(demo.cta_label||'Book your 1:1 Strategy Audit',demo.cta_url); da.classList.add('replay'); da.classList.add('plain'); dc2.appendChild(da); if(demo.cta_note) dc2.appendChild(el('span','demo-note',demo.cta_note)); app.appendChild(dc2);}
+    if(canWrite) wireEditing();
+  }
+  function wrapSec(c){var s=el('section'); s.appendChild(c); return s;}
+  // Ticks are each viewer's own: kept in their browser, never saved into the page.
+  var TICKS='audit-steps:'+String((DATA.client||{}).name||'').toLowerCase().replace(/[^a-z0-9]+/g,'-');
+  function ticks(){try{return JSON.parse(localStorage.getItem(TICKS)||'{}')||{};}catch(e){return {};}}
+  function stepTicked(i,fallback){var t=ticks(); return (i in t)?!!t[i]:fallback;}
+  function tickStep(i,on){try{var t=ticks(); t[i]=on; localStorage.setItem(TICKS,JSON.stringify(t));}catch(e){}}
+  // Notes stay plain text in the editor. On the page, a first line in capitals becomes a label and links become clickable.
+  function linkify(node,text){
+    text.split(/(https?:\/\/[^\s]+)/).forEach(function(part,i){
+      if(i%2&&safeUrl(part)){var a=el('a',null,part); a.href=part; a.target='_blank'; a.rel='noopener'; node.appendChild(a);}
+      else if(part) node.appendChild(document.createTextNode(part));});
+  }
+  function richNotes(view,text){
+    view.classList.add('rich');
+    String(text).replace(/\r/g,'').split(/\n\s*\n/).forEach(function(block){
+      var lines=block.replace(/^\n+|\s+$/g,'').split('\n'); if(!lines[0]) return;
+      var b=el('div','nb'), first=lines[0].trim();
+      if(first.length>3&&/[A-Z]/.test(first)&&!/[a-z]/.test(first)){b.appendChild(el('h3','note-h',first)); lines.shift();}
+      if(lines.length){var para=el('p','note-p'); linkify(para,lines.join('\n')); b.appendChild(para);}
+      view.appendChild(b);});
+  }
+
+  function setEditing(on){
+    document.querySelectorAll('.notes-view,.step .txt,.nstep .txt').forEach(function(n){n.classList.toggle('hidden',on);});
+    document.querySelectorAll('#notes,.step input[type=text],.step label,.nstep input[type=text]').forEach(function(n){n.classList.toggle('hidden',!on);});
+    document.getElementById('editbtn').classList.toggle('hidden',on);
+    document.getElementById('savebtn').classList.toggle('hidden',!on);
+    document.getElementById('cancelbtn').classList.toggle('hidden',!on);
+    if(on) document.getElementById('notes').focus();
+  }
+  function wireEditing(){
+    document.getElementById('editbar').classList.remove('hidden');
+    document.getElementById('editbtn').onclick=function(){setEditing(true);};
+    document.getElementById('cancelbtn').onclick=function(){render();};
+    document.getElementById('savebtn').onclick=save;
+  }
+  function esc(json){return json.replace(/</g,'\\u003c');}
+  function buildDoc(data){
+    return '<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n<title>Your 1:1 Strategy Audit</title>\n<link rel="preconnect" href="https://fonts.googleapis.com">\n<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">\n<style id="audit-css">'+CSS+'</style>\n</head>\n<body>\n<div class="wrap" id="app"></div>\n<script type="application/json" id="audit-data">'+esc(JSON.stringify(data))+'<\/script>\n<script id="audit-js">'+JS+'<\/script>\n</body>\n</html>\n';
+  }
+  function save(){
+    if(busy||!art) return; busy=true;
+    var st=document.getElementById('status'); st.textContent='Saving…';
+    var next=JSON.parse(JSON.stringify(DATA));
+    next.deep_dive_notes=document.getElementById('notes').value;
+    var rows=(next.next_steps&&next.next_steps.length)?next.next_steps:[{},{},{}];
+    document.querySelectorAll('.step input[type=text],.nstep input[type=text]').forEach(function(inp){var i=+inp.dataset.i; rows[i]=rows[i]||{}; rows[i].text=inp.value.trim();});
+    document.querySelectorAll('.step input[type=checkbox]').forEach(function(cb){var i=+cb.dataset.i; rows[i]=rows[i]||{}; rows[i].done=cb.checked;});
+    next.next_steps=rows;
+    try{sessionStorage.setItem('audit-unsaved',JSON.stringify({notes:next.deep_dive_notes,steps:rows}));}catch(e){}
+    art.publish(buildDoc(next)).then(function(){
+      try{sessionStorage.removeItem('audit-unsaved');}catch(e){}
+      st.textContent='Saved. Everyone with the link now sees this version.';
+    }).catch(function(err){
+      busy=false; var code=err&&err.code;
+      if(code==='conflict'){st.textContent='A newer version was saved elsewhere. Reloading it now.';}
+      else if(code==='not_writer'||code==='not_granted'){canWrite=false; render(); document.getElementById('status').textContent='This view is read-only.';}
+      else if(code==='rate_limited'){st.textContent='Saving too quickly. Wait a moment, then save again.';}
+      else {st.textContent='Couldn’t save just now. Your notes are still in the box.';}
+    });
+  }
+
+  render();
+
+  // Light up editing once the viewer confirms this page can publish itself.
+  // Hide it only when the viewer explicitly says this person can't edit.
+  function enable(){
+    if(canWrite) return; canWrite=true; render();
+    try{var un=JSON.parse(sessionStorage.getItem('audit-unsaved')||'null');
+      if(un){setEditing(true); document.getElementById('notes').value=un.notes||''; document.getElementById('status').textContent='Restored your unsaved notes.';}}catch(e){}
+  }
+  if(window.claude && typeof window.claude.use==='function'){
+    window.claude.use('artifact').then(function(a){
+      if(!a) return; art=a;
+      return window.claude.use('user').then(function(user){
+        if(!user) return enable();
+        var checks=[];
+        try{ if(typeof user.isOwner==='function') checks.push(user.isOwner()); if(typeof user.canEdit==='function') checks.push(user.canEdit()); }catch(e){}
+        if(!checks.length) return enable();
+        return Promise.all(checks).then(function(v){ if(v.some(Boolean)) enable(); });
+      }).catch(function(){ enable(); });
+    }).catch(function(){});
+  }
+})();
+</script>
+</body>
+</html>
